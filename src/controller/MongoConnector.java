@@ -1,14 +1,13 @@
-package com.ng2Service.controller;
+package controller;
+
+import org.springframework.web.bind.annotation.*;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.*;
 
 import java.util.*;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.bson.Document;
-
-import com.mongodb.*;
-import com.mongodb.client.*;
 
 public class MongoConnector{
 	
