@@ -1,21 +1,23 @@
-<beans xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
-	xsi:schemaLocation="
+<beans 
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://www.springframework.org/schema/beans"
+    xsi:schemaLocation="
 		http://www.springframework.org/schema/beans  
 		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
-
-	<bean id="HandlerMapping"
-		class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping" />
-	<bean name="/login" class="com.ng2Service.controller.UserController" />
-	<bean name="/logout" class="com.ng2Service.controller.UserController" />
-	<bean name="/signup" class="com.ng2Service.controller.UserController" />
-	<bean name="/fetchList" class="com.ng2Service.controller.MainController" />
-	<bean name="/fetchData" class="com.ng2Service.controller.MainController" />
-	<bean name="/CSV" class="com.ng2Service.controller.MainController" />
+		
+	<bean id="HandlerMapping" class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping" />
+	<bean name="/login" class="controller.UserController" />
+	<bean name="/logout" class="controller.UserController" />
+	<bean name="/signup" class="controller.UserController" />
+	<bean name="/fetchList" class="controller.MainController" />
+	<bean name="/fetchData" class="controller.MainController" />
+	<bean name="/CSV" class="controller.MainController" />
 	<bean id="viewResolver"
-		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-		<property name="suffix">
-			<value>.html</value>
-		</property>
+			class="org.springframework.web.servlet.view.InternalResourceViewResolver" >
+			<property name="suffix">
+				<value>.html</value>
+			</property>
 	</bean>
+		
 </beans>

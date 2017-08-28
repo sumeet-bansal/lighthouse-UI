@@ -13,16 +13,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class MainController extends MongoConnector {
 
-	private ArrayList<Map<String, Set<String>>> tree = new ArrayList<Map<String, Set<String>>>();
+	private ArrayList<Map<String, Set<String>>> gaganwtftree = new ArrayList<Map<String, Set<String>>>();
+	private DirTree actualnotshittygagantree = new DirTree();
 	private String selR[] = { "", "", "", "" };
 	private String selL[] = { "", "", "", "" };
 
 	@ResponseBody
 	@RequestMapping(value = "/fetchList", method = RequestMethod.POST)
 	public String fetchList(HttpServletRequest req, HttpServletResponse res) throws IOException {
-		System.out.println("Attempt to get list of Data");
+		System.out.println("Attempt to get list of data.");
 
-		MongoConnector m = new MongoConnector();
 		ObjectMapper mapper = new ObjectMapper();
 		Set<String> list = new TreeSet<String>();
 		String type = req.getParameter("listType");
@@ -36,82 +36,71 @@ public class MainController extends MongoConnector {
 			String location = key.substring(key.lastIndexOf(',') + 2, key.lastIndexOf(']'));
 			context = req.getParameter(location);
 			realType = location.substring(location.lastIndexOf('[') + 1, location.lastIndexOf(']'));
+			
+			int level = -1;
+			switch (realType) {
+			case "env":
+				level = 0;
+				break;
+			case "fabric":
+				level = 1;
+				break;
+			case "node":
+				level = 2;
+				break;
+			case "file":
+				level = 3;
+				break;
+			default:
+				level = -1;
+			}
+			
 			if (location.substring(location.indexOf('[') + 1, location.indexOf(']'))
 					.equals("left")) {
 				server = "left";
-				if (realType.equals("env")) {
-					selL[0] = context;
-					selL[1] = "";
-					selL[2] = "";
-					selL[3] = "";
-				} else if (realType.equals("fabric")) {
-					selL[1] = context;
-					selL[2] = "";
-					selL[3] = "";
-				} else if (realType.equals("node")) {
-					selL[2] = context;
-					selL[3] = "";
-				} else if (realType.equals("file")) {
-					selL[3] = context;
+				selL[level] = context;
+				for (int i = level+1; i < selL.length; i++) {
+					selL[i] = "";
 				}
 			} else {
 				server = "right";
-				if (realType.equals("env")) {
-					selR[0] = context;
-					selR[1] = "";
-					selR[2] = "";
-					selR[3] = "";
-				} else if (realType.equals("fabric")) {
-					selR[1] = context;
-					selR[2] = "";
-					selR[3] = "";
-				} else if (realType.equals("node")) {
-					selR[2] = context;
-					selR[3] = "";
-				} else if (realType.equals("file")) {
-					selR[3] = context;
+				selR[level] = context;
+				for (int i = level+1; i < selR.length; i++) {
+					selR[i] = "";
 				}
 			}
 		} else {
-			m.connectToDatabase();
-			m.populate();
-			tree.add(m.fabrics);
-			tree.add(m.nodes);
-			tree.add(m.files);
+			MongoConnector.connectToDatabase();
+			actualnotshittygagantree = MongoConnector.populate();
 		}
 
 		if (type == null || type.equals("env")) {
-			list.addAll(tree.get(0).keySet());
+			list.addAll(gaganwtftree.get(0).keySet());
 			list.add("*");
 		} else if (type.equals("fabric")) {
-			if (server.equals("left")) {
-				list = tree.get(0).get(context);
-				list.add("*");
-			} else {
-				list = tree.get(0).get(context);
-				list.add("*");
-			}
+			list = gaganwtftree.get(0).get(context);
+			list.add("*");
 		} else if (type.equals("node")) {
 			if (server.equals("left")) {
-				if (tree.get(1).containsKey(selL[0] + "." + context)) {
-					list = tree.get(1).get(selL[0] + "." + context);
+				if (gaganwtftree.get(1).containsKey(selL[0] + "." + context)) {
+					list = gaganwtftree.get(1).get(selL[0] + "." + context);
 					list.add("*");
 				}
 			} else {
-				if (tree.get(1).containsKey(selR[0] + "." + context)) {
-					list = tree.get(1).get(selR[0] + "." + context);
+				if (gaganwtftree.get(1).containsKey(selR[0] + "." + context)) {
+					list = gaganwtftree.get(1).get(selR[0] + "." + context);
 					list.add("*");
 				}
 			}
 		} else if (type.equals("file")) {
 			if (server.equals("left")) {
-				if (tree.get(2).containsKey(selL[0] + "." + selL[1] + "." + context)) {
-					list = tree.get(2).get(selL[0] + "." + selL[1] + "." + context);
+				if (gaganwtftree.get(2).containsKey(selL[0] + "." + selL[1] + "." + context)) {
+					list = gaganwtftree.get(2).get(selL[0] + "." + selL[1] + "." + context);
 					list.add("*");
 				}
 			} else {
-				if (tree.get(2).containsKey(selR[0] + "." + selR[1] + "." + context)) {
-					list = tree.get(2).get(selR[0] + "." + selR[1] + "." + context);
+				if (gaganwtftree.get(2).containsKey(selR[0] + "." + selR[1] + "." + context)) {
+					list = gaganwtftree.get(2).get(selR[0] + "." + selR[1] + "." + context);
 					list.add("*");
 				}
 			}

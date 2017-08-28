@@ -32,7 +32,7 @@ public class DirTree {
 		 */
 		public DirNode(String name) {
 			this.name = name;
-			children = new TreeSet<>();
+			children = new LinkedHashSet<>();
 		}
 
 		/**

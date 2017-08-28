@@ -1,7 +1,3 @@
-# compiled source
-target/
-*.class
-
 # packages
 # commit the raw source--git has its own built in compression methods
 *.7z
