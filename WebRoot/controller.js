@@ -57,7 +57,7 @@ function updateCaption(objID, text) {
 }
 
 function retrieveList(isLeft, type, objID, isFirst, context) {
-	var url = "/ng2Service/api/fetchList";
+	var url = "/lighthouse-UI/api/fetchList";
 	var server="";
 	if(isLeft){
 		server="1";
