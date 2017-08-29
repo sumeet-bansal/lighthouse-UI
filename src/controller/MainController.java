@@ -21,15 +21,11 @@ public class MainController extends MongoConnector {
 	@RequestMapping(value = "/fetchList", method = RequestMethod.POST)
 	public String fetchList(HttpServletRequest req, HttpServletResponse res) throws IOException {
 		MongoConnector.connectToDatabase();
-		System.out.println("Attempt to get list of data.");
 
-		// TODO wildcard support
-		
 		ObjectMapper mapper = new ObjectMapper();
-		Set<String> list = new LinkedHashSet<>();
-		String selectedKey = "";
-		String selectedVal = "";
-		String path = "";
+		Set<String> children = new LinkedHashSet<>();
+		ArrayList<String> paths = new ArrayList<>();
+		paths.add("");
 
 		int level = -1;
 		if (req.getParameterMap().size() == 1) {
@@ -39,10 +35,11 @@ public class MainController extends MongoConnector {
 			for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
 				selectedDrop = entry;
 			}
-			selectedKey = selectedDrop.getKey();
-			selectedVal = selectedDrop.getValue()[0];
-			String type = selectedKey.substring(selectedKey.lastIndexOf('[')+1, selectedKey.length()-1);
-			
+			String selectedKey = selectedDrop.getKey();
+			String selectedVal = selectedDrop.getValue()[0];
+			String type = selectedKey.substring(selectedKey.lastIndexOf('[') + 1,
+					selectedKey.length() - 1);
+
 			switch (type) {
 			case "env":
 				level = 0;
@@ -59,7 +56,7 @@ public class MainController extends MongoConnector {
 			default:
 				level = -1;
 			}
-			
+
 			String[] selectedSide;
 			if (selectedKey.contains("left")) {
 				System.out.println("left server");
@@ -70,23 +67,46 @@ public class MainController extends MongoConnector {
 			}
 
 			selectedSide[level] = selectedVal;
-			for (int i = 0; i <= level; i++) {
-				path += selectedSide[i] + "/";
-			}
-			for (int i = level+1; i < selectedSide.length; i++) {
+			for (int i = level + 1; i < selectedSide.length; i++) {
 				selectedSide[i] = "";
 			}
+
+			System.out.println("level " + level + ", i.e. " + type);
+			
+			// rebuilds new paths, level by level
+			for (int i = 0; i <= level; i++) {
+				ArrayList<String> expanded = new ArrayList<>(paths.size());
+
+				// rebuilds each path individually
+				for (int p = 0; p < paths.size(); p++) {
+					String path = paths.get(p);
+					path = path.length() > 0 && path.charAt(0) == '/' ? path.substring(1) : path;
+
+					if (!selectedSide[i].equals("*")) {
+						expanded.add(path + "/" + selectedSide[i]);
+					} else {
+						for (String child : tree.getChildren(path)) {
+							expanded.add(path + "/" + child);
+						}
+					}
+
+				}
+				paths = expanded;
+			}
 		}
-		
-		System.out.println("path: " + path);
-		list.add("*");
-		list.addAll(tree.getChildren(path));
-		
+
+		children.add("*");
+		System.out.println(paths.size() + " paths.");
+		for (String path : paths) {
+			System.out.println("path: " + path);
+			path = path.length() > 0 && path.charAt(0) == '/' ? path.substring(1) : path;
+			children.addAll(tree.getChildren(path));
+		}
+
 		try {
-			String ret = "{\"result\": \"SUCCESS\", \"list\":" + mapper.writeValueAsString(list)
+			String ret = "{\"result\": \"SUCCESS\", \"list\":" + mapper.writeValueAsString(children)
 					+ "}";
-			System.out.println(ret);
-			System.out.println("\n\n");
+			System.out.println(ret + "\n\n");
 			return ret;
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
