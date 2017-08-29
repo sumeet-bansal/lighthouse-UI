@@ -44,6 +44,13 @@ public class MongoConnector {
 				"[DATABASE MESSAGE] Database connection successful @ " + DB_NAME + "." + COL_NAME);
 	}
 	
+	/**
+	 * Disconnects the Mongo connection safely.
+	 */
+	public static void disconnect() {
+		client.close();
+	}
+	
 	public static DirTree populate() {
 		DirTree tree = new DirTree();
 		MongoCursor<String> cursor = collection.distinct("path", String.class).iterator();

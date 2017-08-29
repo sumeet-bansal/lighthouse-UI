@@ -30,6 +30,7 @@ public class MainController extends MongoConnector {
 		int level = -1;
 		if (req.getParameterMap().size() == 1) {
 			tree = MongoConnector.populate();
+			MongoConnector.disconnect();
 		} else {
 			Map.Entry<String, String[]> selectedDrop = null;
 			for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
