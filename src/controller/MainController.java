@@ -13,114 +13,80 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class MainController extends MongoConnector {
 
-	private ArrayList<Map<String, Set<String>>> tree = new ArrayList<Map<String, Set<String>>>();
-	private String selR[] = { "", "", "", "" };
-	private String selL[] = { "", "", "", "" };
+	private DirTree tree = new DirTree();
+	private String[] dropL = { "", "", "", "" };
+	private String[] dropR = { "", "", "", "" };
 
 	@ResponseBody
 	@RequestMapping(value = "/fetchList", method = RequestMethod.POST)
 	public String fetchList(HttpServletRequest req, HttpServletResponse res) throws IOException {
-		System.out.println("Attempt to get list of Data");
+		MongoConnector.connectToDatabase();
+		System.out.println("Attempt to get list of data.");
 
-		MongoConnector m = new MongoConnector();
+		// TODO wildcard support
+		
 		ObjectMapper mapper = new ObjectMapper();
-		Set<String> list = new TreeSet<String>();
-		String type = req.getParameter("listType");
-		Map<String, String[]> reqParams = req.getParameterMap();
-		String key = reqParams.keySet().toString();
-		String server = "";
-		String realType = "";
-		String context = "";
+		Set<String> list = new LinkedHashSet<>();
+		String selectedKey = "";
+		String selectedVal = "";
+		String path = "";
 
-		if (key.indexOf(',') > -1) {
-			String location = key.substring(key.lastIndexOf(',') + 2, key.lastIndexOf(']'));
-			context = req.getParameter(location);
-			realType = location.substring(location.lastIndexOf('[') + 1, location.lastIndexOf(']'));
-			if (location.substring(location.indexOf('[') + 1, location.indexOf(']'))
-					.equals("left")) {
-				server = "left";
-				if (realType.equals("env")) {
-					selL[0] = context;
-					selL[1] = "";
-					selL[2] = "";
-					selL[3] = "";
-				} else if (realType.equals("fabric")) {
-					selL[1] = context;
-					selL[2] = "";
-					selL[3] = "";
-				} else if (realType.equals("node")) {
-					selL[2] = context;
-					selL[3] = "";
-				} else if (realType.equals("file")) {
-					selL[3] = context;
-				}
-			} else {
-				server = "right";
-				if (realType.equals("env")) {
-					selR[0] = context;
-					selR[1] = "";
-					selR[2] = "";
-					selR[3] = "";
-				} else if (realType.equals("fabric")) {
-					selR[1] = context;
-					selR[2] = "";
-					selR[3] = "";
-				} else if (realType.equals("node")) {
-					selR[2] = context;
-					selR[3] = "";
-				} else if (realType.equals("file")) {
-					selR[3] = context;
-				}
-			}
+		int level = -1;
+		if (req.getParameterMap().size() == 1) {
+			tree = MongoConnector.populate();
 		} else {
-			m.connectToDatabase();
-			m.populate();
-			tree.add(m.fabrics);
-			tree.add(m.nodes);
-			tree.add(m.files);
-		}
+			Map.Entry<String, String[]> selectedDrop = null;
+			for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
+				selectedDrop = entry;
+			}
+			selectedKey = selectedDrop.getKey();
+			selectedVal = selectedDrop.getValue()[0];
+			String type = selectedKey.substring(selectedKey.lastIndexOf('[')+1, selectedKey.length()-1);
+			
+			switch (type) {
+			case "env":
+				level = 0;
+				break;
+			case "fabric":
+				level = 1;
+				break;
+			case "node":
+				level = 2;
+				break;
+			case "file":
+				level = 3;
+				break;
+			default:
+				level = -1;
+			}
+			
+			String[] selectedSide;
+			if (selectedKey.contains("left")) {
+				System.out.println("left server");
+				selectedSide = dropL;
+			} else {
+				System.out.println("right server");
+				selectedSide = dropR;
+			}
 
-		if (type == null || type.equals("env")) {
-			list.addAll(tree.get(0).keySet());
-			list.add("*");
-		} else if (type.equals("fabric")) {
-			if (server.equals("left")) {
-				list = tree.get(0).get(context);
-				list.add("*");
-			} else {
-				list = tree.get(0).get(context);
-				list.add("*");
+			selectedSide[level] = selectedVal;
+			for (int i = 0; i <= level; i++) {
+				path += selectedSide[i] + "/";
 			}
-		} else if (type.equals("node")) {
-			if (server.equals("left")) {
-				if (tree.get(1).containsKey(selL[0] + "." + context)) {
-					list = tree.get(1).get(selL[0] + "." + context);
-					list.add("*");
-				}
-			} else {
-				if (tree.get(1).containsKey(selR[0] + "." + context)) {
-					list = tree.get(1).get(selR[0] + "." + context);
-					list.add("*");
-				}
-			}
-		} else if (type.equals("file")) {
-			if (server.equals("left")) {
-				if (tree.get(2).containsKey(selL[0] + "." + selL[1] + "." + context)) {
-					list = tree.get(2).get(selL[0] + "." + selL[1] + "." + context);
-					list.add("*");
-				}
-			} else {
-				if (tree.get(2).containsKey(selR[0] + "." + selR[1] + "." + context)) {
-					list = tree.get(2).get(selR[0] + "." + selR[1] + "." + context);
-					list.add("*");
-				}
+			for (int i = level+1; i < selectedSide.length; i++) {
+				selectedSide[i] = "";
 			}
 		}
-
+		
+		System.out.println("path: " + path);
+		list.add("*");
+		list.addAll(tree.getChildren(path));
+		
 		try {
 			String ret = "{\"result\": \"SUCCESS\", \"list\":" + mapper.writeValueAsString(list)
 					+ "}";
 			System.out.println(ret);
+			System.out.println("\n\n");
 			return ret;
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
@@ -144,50 +110,50 @@ public class MainController extends MongoConnector {
 	@RequestMapping(value = "/CSV", method = RequestMethod.POST)
 	public String csv() {
 		ArrayList<ArrayList<String>> report = new ArrayList<ArrayList<String>>();
-		String path1 = selL[0] + "/" + selL[1] + "/" + selL[2] + "/" + selL[3];
-		String path2 = selR[0] + "/" + selR[1] + "/" + selR[2] + "/" + selR[3];
+		String path1 = dropL[0] + "/" + dropL[1] + "/" + dropL[2] + "/" + dropL[3];
+		String path2 = dropR[0] + "/" + dropR[1] + "/" + dropR[2] + "/" + dropR[3];
 		;
 		int l = 0;
 		int r = 0;
-		for (int i = 0; i < selL.length; i++) {
+		for (int i = 0; i < dropL.length; i++) {
 			System.out.println("left");
 			if (i < 3) {
-				path1 += selL[i] + "/";
+				path1 += dropL[i] + "/";
 			} else {
-				path1 += selL[i];
+				path1 += dropL[i];
 			}
 
 		}
-		for (int i = 0; i < selR.length; i++) {
+		for (int i = 0; i < dropR.length; i++) {
 			System.out.println("right");
 			if (i < 3) {
-				path2 += selR[i] + "/";
+				path2 += dropR[i] + "/";
 			} else {
-				path2 += selR[i];
+				path2 += dropR[i];
 			}
 
 		}
-		while (!selL[l].equals("") && l < 4) {
+		while (!dropL[l].equals("") && l < 4) {
 			if (l < 3) {
-				path1 += selL[l] + "/";
+				path1 += dropL[l] + "/";
 			} else {
-				path1 += selL[l];
+				path1 += dropL[l];
 			}
 			l++;
 		}
-		while (!selR[r].equals("") && r < 4) {
+		while (!dropR[r].equals("") && r < 4) {
 			System.out.println("right");
 			if (r < 3) {
-				path1 += selR[r] + "/";
+				path1 += dropR[r] + "/";
 			} else {
-				path1 += selR[r];
+				path1 += dropR[r];
 			}
 			r++;
 		}
 		System.out.println(path1 + " " + path2);
-		if (selL[0].equals("")) {
+		if (dropL[0].equals("")) {
 			cmd("C:/Users/GGupta/Desktop", "java -jar ADS_1.0.jar query compare " + path2);
-		} else if (selR[0].equals("")) {
+		} else if (dropR[0].equals("")) {
 			cmd("C:/Users/GGupta/Desktop", "java -jar ADS_1.0.jar query compare " + path1);
 		} else {
 			cmd("C:/Users/GGupta/Desktop",
