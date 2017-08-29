@@ -45,10 +45,9 @@ function onDropdown(type, isLeft, item) {
 		var nextID = '#' + nextType + idx + '-drop';
 		console.log("retrieve list parameters - ", items);
 		retrieveList(isLeft, nextType, nextID, false, items);
-	} 
-//	else {
+//	} else {
 //		retrieveData(idx, isLeft);
-//	}
+	}
 }
 
 function updateCaption(objID, text) {
